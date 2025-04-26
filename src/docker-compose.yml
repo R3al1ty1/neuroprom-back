@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  neuroprom-backend:
+    build: .
+    container_name: neuroprom-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  db:
+    image: postgres:latest
+    container_name: neuroprom-db
+    environment:
+      POSTGRES_USER: ${CONFIG__DB__POSTGRES_USER}
+      POSTGRES_PASSWORD: ${CONFIG__DB__POSTGRES_PASSWORD}
+      POSTGRES_DB: ${CONFIG__DB__POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CONFIG__DB__POSTGRES_USER} -d ${CONFIG__DB__POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+volumes:
+  postgres_data:
