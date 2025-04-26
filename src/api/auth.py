@@ -7,8 +7,11 @@ from typing import Optional
 
 from core.db_helper import db_helper
 from core.schemas.user import UserCreate, UserResponse
-from auth.jwt import create_access_token, security, decode_token
+from auth.jwt import create_access_token, decode_token
 import crud.user as user_crud
+
+# Изменяем security чтобы он не требовал токен
+security = HTTPBearer(auto_error=False)
 
 router = APIRouter()
 
@@ -44,15 +47,18 @@ async def login(user_data: UserCreate, db: AsyncSession = Depends(db_helper.sess
     return {"access_token": access_token, "token_type": "bearer"}
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(db_helper.session_getter)
 ) -> Optional[UserResponse]:
-    token_data = decode_token(credentials.credentials)
-    user = await user_crud.get_user_by_id(db, UUID(token_data["sub"]))
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
+    # Если нет токена, возвращаем None (для анонимного доступа)
+    if not credentials:
+        return None
+        
+    try:
+        token_data = decode_token(credentials.credentials)
+        user = await user_crud.get_user_by_id(db, UUID(token_data["sub"]))
+        if user is None:
+            return None
+        return user
+    except:
+        return None

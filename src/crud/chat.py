@@ -19,19 +19,27 @@ async def create_chat(db: AsyncSession, user_id: Optional[UUID] = None) -> Chat:
 async def get_chat(db: AsyncSession, chat_id: UUID, user_id: Optional[UUID] = None) -> Optional[Chat]:
     stmt = select(Chat).where(Chat.id == chat_id)
     if user_id is not None:
+        # Для авторизованного пользователя показываем только его чаты
         stmt = stmt.where(Chat.user_id == user_id)
     result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+    chat = result.scalar_one_or_none()
+    
+    # Для анонимного пользователя показываем только текущий чат и только если он анонимный
+    if user_id is None and chat and not chat.is_anonymous:
+        return None
+        
+    return chat
 
 async def get_chats(db: AsyncSession, user_id: Optional[UUID] = None, skip: int = 0, limit: int = 100) -> List[Chat]:
-    stmt = select(Chat)
     if user_id is not None:
-        stmt = stmt.where(Chat.user_id == user_id)
+        # Для авторизованного пользователя показываем только его чаты
+        stmt = select(Chat).where(Chat.user_id == user_id)
+        stmt = stmt.offset(skip).limit(limit)
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
     else:
-        stmt = stmt.where(Chat.is_anonymous == True)
-    stmt = stmt.offset(skip).limit(limit)
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
+        # Для неавторизованного пользователя не показываем список чатов
+        return []
 
 async def get_chat_messages(db: AsyncSession, chat_id: UUID) -> List[Message]:
     stmt = select(Message).where(Message.chat_id == chat_id).order_by(Message.timestamp)

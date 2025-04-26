@@ -19,12 +19,15 @@ async def create_chat(
     current_user: Optional[UserResponse] = Depends(get_current_user),
     db: AsyncSession = Depends(db_helper.session_getter)
 ):
-    # Для анонимного чата или неавторизованного пользователя
-    if chat_data.is_anonymous or current_user is None:
+    # Если пользователь не авторизован, всегда создаем анонимный чат
+    if current_user is None:
         return await chat_crud.create_chat(db)
     
-    # Для авторизованного пользователя создаем персональный чат
-    return await chat_crud.create_chat(db, current_user.id)
+    # Для авторизованного пользователя учитываем его выбор (анонимный или персональный чат)
+    return await chat_crud.create_chat(
+        db, 
+        current_user.id if not chat_data.is_anonymous else None
+    )
 
 @router.get("/chats/", response_model=List[ChatResponse])
 async def list_chats(
@@ -33,8 +36,12 @@ async def list_chats(
     current_user: Optional[UserResponse] = Depends(get_current_user),
     db: AsyncSession = Depends(db_helper.session_getter)
 ):
-    # Получаем чаты в зависимости от того, авторизован пользователь или нет
-    return await chat_crud.get_chats(db, current_user.id if current_user else None, skip=skip, limit=limit)
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Неавторизованные пользователи не могут просматривать список чатов. Используйте конкретный chat_id для доступа к своему анонимному чату."
+        )
+    return await chat_crud.get_chats(db, current_user.id, skip=skip, limit=limit)
 
 @router.get("/chats/{chat_id}", response_model=ChatResponse)
 async def get_chat(
