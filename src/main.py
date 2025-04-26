@@ -25,7 +25,10 @@ app = FastAPI(
 )
 
 origins = [
-    "https://app.neuroprom.com"
+    "https://app.neuroprom.com",
+    "https://neuroprom.com",
+    "http://127.0.0.1:5000",
+    "*"
 ]
 
 app.add_middleware(

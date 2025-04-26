@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 from typing import List
-from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Boolean
+from sqlalchemy import Column, String, DateTime, ForeignKey, Integer, Boolean, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncAttrs
@@ -41,3 +41,14 @@ class Message(Base):
     is_assistant = Column(Boolean, default=False, nullable=False)  # True для ответов ассистента, False для сообщений пользователя
 
     chat = relationship("Chat", back_populates="messages", lazy="selectin")
+
+class Form(Base):
+    __tablename__ = "forms"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    phone = Column(String, nullable=False)
+    company = Column(String)
+    description = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)

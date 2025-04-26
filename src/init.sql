@@ -113,3 +113,20 @@ CREATE INDEX idx_chat_user_id ON public.chat USING btree (user_id);
 ALTER TABLE ONLY public.message
     ADD CONSTRAINT message_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chat(id) ON DELETE CASCADE;
 
+
+-- Создаем таблицу forms для хранения данных формы обратной связи
+CREATE TABLE IF NOT EXISTS public.forms (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying NOT NULL,
+    email character varying NOT NULL,
+    phone character varying NOT NULL,
+    company character varying,
+    description text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT forms_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_forms_created_at ON public.forms USING btree (created_at);
+
+ALTER TABLE public.forms OWNER TO postgres;
+
