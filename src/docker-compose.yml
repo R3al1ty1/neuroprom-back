@@ -25,7 +25,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - neuroprom_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${CONFIG__DB__POSTGRES_USER} -d ${CONFIG__DB__POSTGRES_DB}"]
@@ -35,4 +35,4 @@ services:
       start_period: 10s
 
 volumes:
-  postgres_data:
+  neuroprom_data:
